@@ -9,8 +9,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import org.json.JSONException;
+import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -45,12 +45,15 @@ public class SignUp extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "Neither of the fields can be empty.", Toast.LENGTH_LONG).show();
                     return;
                 }
-                Gson gs = new Gson();
-                JsonObject js = new JsonObject();
-                js.addProperty("name", String.valueOf(name.getText()));
-                js.addProperty("username", String.valueOf(username.getText()));
-                js.addProperty("password", String.valueOf(pwd.getText()));
-                String json = gs.toJson(js);
+                JSONObject js = new JSONObject();
+                try {
+                    js.put("name", String.valueOf(name.getText()));
+                    js.put("username", String.valueOf(username.getText()));
+                    js.put("password", String.valueOf(pwd.getText()));
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+                String json = js.toString();
                 new HTTP(json).execute();
             }
         });
@@ -107,16 +110,20 @@ public class SignUp extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "Error",Toast.LENGTH_LONG).show();
                 return;
             }
-            Gson gson = new Gson();
-            JsonObject jsonObject = gson.fromJson(res, JsonObject.class);
-            String code = jsonObject.get("code").getAsString();
-            if(Objects.equals(code, "A")) {
-                Toast.makeText(getApplicationContext(), "✅Successfully created user!", Toast.LENGTH_LONG).show();
-                startActivity(new Intent(SignUp.this, MainActivity.class));
-                finish();
+            try {
+                JSONObject js = new JSONObject(res);
+                String code = js.get("code").toString();
+                if(Objects.equals(code, "A")) {
+                    Toast.makeText(getApplicationContext(), "✅Successfully created user!", Toast.LENGTH_LONG).show();
+                    startActivity(new Intent(SignUp.this, MainActivity.class));
+                    finish();
+                }
+                else
+                    Toast.makeText(getApplicationContext(), "⚠ User already exists", Toast.LENGTH_LONG).show();
+            } catch (JSONException e) {
+                Toast.makeText(getApplicationContext(), "Error",Toast.LENGTH_LONG).show();
+                return;
             }
-            else
-                Toast.makeText(getApplicationContext(), "⚠ User already exists", Toast.LENGTH_LONG).show();
 
         }
     }

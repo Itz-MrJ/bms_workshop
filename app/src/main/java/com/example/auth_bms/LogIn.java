@@ -7,17 +7,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
-
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
-import java.io.BufferedInputStream;
+import org.json.JSONException;
+import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,11 +41,14 @@ public class LogIn extends AppCompatActivity {
                     return;
                 }
 
-                Gson gs = new Gson();
-                JsonObject js = new JsonObject();
-                js.addProperty("username", us);
-                js.addProperty("password", pwd);
-                String json = gs.toJson(js);
+                JSONObject js = new JSONObject();
+                try {
+                    js.put("username", us);
+                    js.put("password", pwd);
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+                String json = js.toString();
                 new HTTP(json).execute();
             }
         });
@@ -103,19 +98,23 @@ public class LogIn extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "Error", Toast.LENGTH_LONG).show();
                 return;
             }
-            Gson gs = new Gson();
-            JsonObject js = gs.fromJson(res, JsonObject.class);
-            String code = js.get("code").getAsString();
-            if(Objects.equals(code, "A")){
-                Toast.makeText(getApplicationContext(), "✅ Successfully logged in!", Toast.LENGTH_LONG).show();
-                Intent ini = new Intent(LogIn.this, Welcome.class);
-                ini.putExtra("name", js.get("name").getAsString());
-                startActivity(ini);
-                finish();
-            }else if(Objects.equals(code, "B")){
-                Toast.makeText(getApplicationContext(),"🚫 Invalid credentials entered",Toast.LENGTH_LONG).show();
-            }else if(Objects.equals(code, "Z")){
-                Toast.makeText(getApplicationContext(),"⚠ No user exists",Toast.LENGTH_LONG).show();
+
+            try {
+                JSONObject js = new JSONObject(res);
+                String code = js.get("code").toString();
+                if(Objects.equals(code, "A")){
+                    Toast.makeText(getApplicationContext(), "✅ Successfully logged in!", Toast.LENGTH_LONG).show();
+                    Intent ini = new Intent(LogIn.this, Welcome.class);
+                    ini.putExtra("name", js.get("name").toString());
+                    startActivity(ini);
+                    finish();
+                }else if(Objects.equals(code, "B")){
+                    Toast.makeText(getApplicationContext(),"🚫 Invalid credentials entered",Toast.LENGTH_LONG).show();
+                }else if(Objects.equals(code, "Z")){
+                    Toast.makeText(getApplicationContext(),"⚠ No user exists",Toast.LENGTH_LONG).show();
+                }
+            } catch (JSONException e) {
+                Toast.makeText(getApplicationContext(), "Error", Toast.LENGTH_LONG).show();
             }
         }
     }
